@@ -1,9 +1,12 @@
+import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { GatewayController } from './gateway.controller';
 import { GatewayService } from './gateway.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { UploadFileModule } from './upload-file/upload-file.module';
+import { JwtStrategy } from './common/strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -28,8 +31,17 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
     ]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET'),
+      }),
+    }),
+
+    UploadFileModule,
   ],
   controllers: [GatewayController],
-  providers: [GatewayService],
+  providers: [GatewayService, JwtStrategy,],
 })
-export class GatewayModule {}
+export class GatewayModule { }
