@@ -57,7 +57,7 @@ export class AuthService {
   }
 
   private generateToken(userId: number): string {
-    const payload = { sub: userId };
+    const payload = { id: userId };
     return this.jwtService.sign(payload, { expiresIn: '1w' });
   }
 }
