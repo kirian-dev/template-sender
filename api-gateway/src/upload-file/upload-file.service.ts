@@ -1,11 +1,16 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
 import { CreateFileDto } from './dto/create-upload-file.dto';
 import { parseCSV, validateCsvFormat } from './helpers';
 import { UploadFileRepository } from './upload-file.repository';
+import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
 
 @Injectable()
 export class UploadFileService {
-  constructor(private uploadFileRepository: UploadFileRepository) { }
+  constructor(
+    private uploadFileRepository: UploadFileRepository,
+    @Inject('RMQ_SERVICE') private readonly messageQueue: ClientProxy
+  ) { }
+
   async create(createUploadFileDto: CreateFileDto) {
     try {
       const csvData = await parseCSV(createUploadFileDto.file.buffer);
@@ -13,34 +18,27 @@ export class UploadFileService {
       const validateCsv = validateCsvFormat(csvData);
 
       if (validateCsv) throw new Error(validateCsv);
+      const rowHeader = 1;
 
-      const pendingAccounts = csvData.length - 1;
+      const pendingAccounts = csvData.length - rowHeader;
 
       const response = await this.uploadFileRepository.create(createUploadFileDto, pendingAccounts);
 
-      for await (const record of csvData.slice(1)) {
-        try {
-          await this.processRecord(response.id, record);
-        } catch (error) {
-          console.error(`Error processing record: ${error.message}`);
-          await this.uploadFileRepository.updateStatus(response.id, "failed")
-        }
+      const batchSize = 100;
+      const batches = this.chunkArray(csvData.slice(1), batchSize);
+
+      for (const batch of batches) {
+        const record = new RmqRecordBuilder(batch)
+          .setOptions({
+            priority: 1,
+          })
+          .build();
+        this.messageQueue.send("send-account", record).subscribe();
       }
 
       return response;
     } catch (error) {
-      throw new Error(error)
-    }
-  }
-
-  async startAsyncProcessing(fileId: number, csvData: any[]): Promise<void> {
-    for await (const record of csvData.slice(1)) {
-      try {
-        await this.processRecord(fileId, record);
-      } catch (error) {
-        console.error(`Error processing record: ${error.message}`);
-        await this.uploadFileRepository.updateStatus(fileId, 'failed');
-      }
+      throw new Error(error);
     }
   }
 
@@ -60,7 +58,7 @@ export class UploadFileService {
     try {
       return `This action returns all uploadFile`;
     } catch (error) {
-      throw new Error(error)
+      throw new Error(error);
     }
   }
 
@@ -72,7 +70,16 @@ export class UploadFileService {
       }
       return file;
     } catch (error) {
-      throw new Error(error)
+      throw new Error(error);
     }
+  }
+
+  // Utility function to split array into batches
+  private chunkArray(array: any[], size: number): any[][] {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+      result.push(array.slice(i, i + size));
+    }
+    return result;
   }
 }
