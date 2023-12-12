@@ -3,6 +3,7 @@ import { CreateFileDto } from './dto/create-upload-file.dto';
 import { parseCSV, validateCsvFormat } from './helpers';
 import { UploadFileRepository } from './upload-file.repository';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
+import { IAccount } from 'src/common/interfaces/file.interface';
 
 @Injectable()
 export class UploadFileService {
@@ -74,8 +75,7 @@ export class UploadFileService {
     }
   }
 
-  // Utility function to split array into batches
-  private chunkArray(array: any[], size: number): any[][] {
+  private chunkArray(array: IAccount[], size: number): IAccount[][] {
     const result = [];
     for (let i = 0; i < array.length; i += size) {
       result.push(array.slice(i, i + size));
