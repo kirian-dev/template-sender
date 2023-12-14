@@ -12,11 +12,11 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
   imports: [TypeOrmModule.forFeature([User, File]),
   ClientsModule.register([
     {
-      name: 'RMQ_SERVICE',
+      name: 'MAIL_SENDER_SERVICE',
       transport: Transport.RMQ,
       options: {
         urls: ['amqp://localhost:5672'],
-        queue: 'sender_queue',
+        queue: 'new_sender_queue',
         queueOptions: {
           durable: false
         },

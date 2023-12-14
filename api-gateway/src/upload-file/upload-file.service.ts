@@ -1,15 +1,14 @@
-import { BadGatewayException, Inject, Injectable } from '@nestjs/common';
+import { StatusFile } from './types';
+import { BadGatewayException, Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateFileDto } from './dto/create-upload-file.dto';
 import { parseCSV, validateCsvFormat } from './helpers';
 import { UploadFileRepository } from './upload-file.repository';
 import { ClientProxy, RmqRecordBuilder } from '@nestjs/microservices';
-import { IAccount } from 'src/common/interfaces/file.interface';
-
 @Injectable()
 export class UploadFileService {
   constructor(
     private uploadFileRepository: UploadFileRepository,
-    @Inject('RMQ_SERVICE') private readonly messageQueue: ClientProxy
+    @Inject('MAIL_SENDER_SERVICE') private readonly messageQueue: ClientProxy
   ) { }
 
   async create(createUploadFileDto: CreateFileDto) {
@@ -18,41 +17,55 @@ export class UploadFileService {
 
       const validateCsv = validateCsvFormat(csvData);
 
-      if (validateCsv) throw new Error(validateCsv);
-      const rowHeader = 1;
+      if (validateCsv) {
+        throw new Error(validateCsv);
+      }
 
+      const rowHeader = 1;
       const pendingAccounts = csvData.length - rowHeader;
 
       const response = await this.uploadFileRepository.create(createUploadFileDto, pendingAccounts);
 
-      const batchSize = 100;
-      const batches = this.chunkArray(csvData.slice(1), batchSize);
-
-      for (const batch of batches) {
-        const record = new RmqRecordBuilder(batch)
-          .setOptions({
-            priority: 1,
-          })
-          .build();
-        this.messageQueue.send("send-account", record).subscribe();
+      for (let i = rowHeader; i < csvData.length; i++) {
+        const account = csvData[i];
+        try {
+          await this.processRecord(response.id, account, createUploadFileDto.emailText);
+        } catch (error) {
+          await this.uploadFileRepository.updateStatus(response.id, "failed", true);
+          Logger.error(`Error processing record for account: ${JSON.stringify(account)}`);
+          throw error;
+        }
       }
+
+      await this.uploadFileRepository.updateStatus(response.id, "completed", true);
 
       return response;
     } catch (error) {
+      console.log("error processing record for account", error)
       throw new Error(error);
     }
   }
 
-  async processRecord(fileId: number, record: Record<string, string>) {
-    const { first_name, last_name, email } = record;
+  async processRecord(fileId: number, account: Record<string, string>, emailText: string) {
+    const { first_name, last_name, email } = account;
 
     if (!first_name || !last_name || !email) {
       await this.uploadFileRepository.updateFailedEmailStatus(fileId);
       return;
     }
-
-    await this.uploadFileRepository.updateSuccessEmailStatus(fileId);
-    console.log(`Email sent successfully to ${email}`);
+    const record = new RmqRecordBuilder([{ ...account, fileId, emailText }])
+      .setOptions({
+        priority: 1,
+      })
+      .build();
+    this.messageQueue.send("send-account", record).subscribe({
+      next: () => {
+        console.log("account updated")
+      },
+      error: (error) => {
+        console.log("error processing record for account", error)
+      }
+    });
   }
 
   findAll() {
@@ -73,13 +86,5 @@ export class UploadFileService {
     } catch (error) {
       throw new Error(error);
     }
-  }
-
-  private chunkArray(array: IAccount[], size: number): IAccount[][] {
-    const result = [];
-    for (let i = 0; i < array.length; i += size) {
-      result.push(array.slice(i, i + size));
-    }
-    return result;
   }
 }

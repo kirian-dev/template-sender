@@ -17,7 +17,7 @@ import { JwtStrategy } from './common/strategies/jwt.strategy';
       port: parseInt(process.env.PRIMARY_DB_PORT),
       username: process.env.PRIMARY_DB_USERNAME,
       password: process.env.PRIMARY_DB_PASSWORD,
-      database: process.env.PRIMARY_DB_PASSWORD,
+      database: process.env.PRIMARY_DB_NAME,
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),
