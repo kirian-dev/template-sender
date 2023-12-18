@@ -12,6 +12,7 @@ export class UploadFileRepository {
     private fileRepository: Repository<File>
   ) { }
 
+
   async create(dto: CreateFileDto, pendingEmails: number): Promise<File | undefined> {
     const { file, emailText, userId } = dto;
     try {
@@ -21,12 +22,13 @@ export class UploadFileRepository {
         userId: userId,
         pending_emails: pendingEmails
       });
-
       return this.fileRepository.save(newFile);
     } catch (error) {
+
       throw new Error(error)
     }
   }
+
 
   async updateFailedEmailStatus(fileId: number) {
     await this.updateEmailStatus(fileId, 'failed');
@@ -45,10 +47,21 @@ export class UploadFileRepository {
     await this.fileRepository.decrement({ id: fileId }, 'pending_emails', 1);
   }
 
-  async updateStatus(fileId: number, newStatus: StatusFile) {
-    await this.fileRepository.update(fileId, { status: newStatus });
-  }
+  async updateStatus(fileId: number, newStatus: StatusFile, isEndTime?: boolean) {
+    try {
+      const updateData: { status: StatusFile, endTime?: Date | null } = {
+        status: newStatus,
+      };
 
+      if (isEndTime) {
+        updateData.endTime = new Date(Math.floor(Date.now() / 1000) * 1000);
+      }
+
+      await this.fileRepository.update(fileId, updateData);
+    } catch (err) {
+      throw new Error(err)
+    }
+  }
   async getById(fileId: number, userId: number) {
     return this.fileRepository.findOneBy({ id: fileId, userId: userId });
   }

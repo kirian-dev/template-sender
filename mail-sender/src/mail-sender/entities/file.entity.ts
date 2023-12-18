@@ -33,10 +33,9 @@ export class File extends BaseEntity {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
-  
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
-  
   @Exclude()
   @ManyToOne(() => User, { eager: true })
   @JoinColumn({ name: 'userId' })

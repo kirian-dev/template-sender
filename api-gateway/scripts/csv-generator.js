@@ -1,22 +1,26 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
+import fs from 'fs';
+
 function generateCSV(rows) {
-    var header = 'first_name,last_name,email\n';
-    var csvData = header;
-    for (var i = 1; i <= rows; i++) {
-        var firstName = "Test_".concat(i);
-        var lastName = "Test_".concat(i);
-        var email = "test_email_".concat(i, "@tests.com");
-        csvData += "".concat(firstName, ",").concat(lastName, ",").concat(email, "\n");
+    const header = 'first_name,last_name,email\n';
+    let csvData = header;
+
+    for (let i = 1; i <= rows; i++) {
+        const firstName = `Test_${i}`;
+        const lastName = `Test_${i}`;
+        const email = `test_email_${i}@tests.com`;
+        csvData += `${firstName},${lastName},${email}\n`;
     }
+
     return csvData;
 }
+
 function saveCSVToFile(rows) {
-    var csvData = generateCSV(rows);
-    var filePath = './public/uploads/test_accounts.csv';
+    const csvData = generateCSV(rows);
+    const filePath = './public/uploads/test_accounts.csv';
+
     fs.writeFileSync(filePath, csvData, 'utf-8');
-    console.log("CSV file with ".concat(rows, " rows has been created: ").concat(filePath));
+    console.log(`CSV file with ${rows} rows has been created: ${filePath}`);
 }
-var numberOfRows = parseInt(process.argv[2], 10) || 10;
+
+const numberOfRows = parseInt(process.argv[2], 10) || 10;
 saveCSVToFile(numberOfRows);
