@@ -20,13 +20,9 @@ export class UploadFileService {
       if (validateCsv) {
         throw new Error(validateCsv);
       }
+      const response = await this.uploadFileRepository.create(createUploadFileDto, csvData.length);
 
-      const rowHeader = 1;
-      const pendingAccounts = csvData.length - rowHeader;
-
-      const response = await this.uploadFileRepository.create(createUploadFileDto, pendingAccounts);
-
-      for (let i = rowHeader; i < csvData.length; i++) {
+      for (let i = 0; i < csvData.length; i++) {
         const account = csvData[i];
         try {
           await this.processRecord(response.id, account, createUploadFileDto.emailText);
@@ -53,15 +49,12 @@ export class UploadFileService {
       await this.uploadFileRepository.updateFailedEmailStatus(fileId);
       return;
     }
-    const record = new RmqRecordBuilder([{ ...account, fileId, emailText }])
+    const record = new RmqRecordBuilder({ ...account, fileId, emailText })
       .setOptions({
         priority: 1,
       })
       .build();
     this.messageQueue.send("send-account", record).subscribe({
-      next: () => {
-        console.log("account updated")
-      },
       error: (error) => {
         console.log("error processing record for account", error)
       }

@@ -1,7 +1,7 @@
 import { IMailSender } from 'src/common/interfaces';
 import { Controller } from '@nestjs/common';
 import { MailSenderService } from './mail-sender.service';
-import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller()
 export class MailSenderController {
@@ -9,7 +9,10 @@ export class MailSenderController {
 
   @MessagePattern("send-account")
   sendMailToAccount(@Payload() data: IMailSender) {
-    console.log("test")
-    return this.mailSenderService.sendMail(data);
+    try {
+      return this.mailSenderService.sendMail(data);
+    } catch (error) {
+      return error
+    }
   }
 }

@@ -29,7 +29,6 @@ export class UploadFileRepository {
     }
   }
 
-
   async updateFailedEmailStatus(fileId: number) {
     await this.updateEmailStatus(fileId, 'failed');
   }

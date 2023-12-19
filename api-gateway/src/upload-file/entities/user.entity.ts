@@ -11,9 +11,9 @@ export class User extends BaseEntity {
   @Column()
   password: string;
 
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp' })
   createdAt: Date;
-
-  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  
+  @Column({ type: 'timestamp' })
   updatedAt: Date;
 }
