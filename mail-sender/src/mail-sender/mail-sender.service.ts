@@ -9,8 +9,13 @@ export class MailSenderService {
 
   async sendMail(data: IMailSender) {
     try {
-      await this.mailSenderRepository.updateSuccessEmailStatus(data.fileId)
-      await sendEmailTemplate(data)
+      const sendEmailResult = await sendEmailTemplate(data);
+
+      if (sendEmailResult) {
+        await this.mailSenderRepository.updateSuccessEmailStatus(data.fileId);
+      } else {
+        this.mailSenderRepository.updateFailedEmailStatus(data.fileId)
+      }
     } catch (err) {
       Logger.error("Error in sendMailService:", err)
       throw new Error(err)

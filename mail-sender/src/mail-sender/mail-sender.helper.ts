@@ -4,7 +4,7 @@ import { IMailSender } from 'src/common/interfaces';
 
 export const sendEmailTemplate = async (
   { email, first_name, last_name, emailText }: IMailSender
-): Promise<void> => {
+): Promise<boolean> => {
    const { SMTP_HOST, SMTP_PASSWORD, SMTP_USER, SMTP_PORT } = process.env;
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST,
@@ -27,8 +27,9 @@ export const sendEmailTemplate = async (
   try {
     await transporter.sendMail(mailOptions);
     Logger.log(`Email sent to ${email}`);
+    return true; 
   } catch (error) {
     Logger.error(`Error sending email: ${error.message}`);
-    throw error;
+    throw new Error(error);
   }
 };

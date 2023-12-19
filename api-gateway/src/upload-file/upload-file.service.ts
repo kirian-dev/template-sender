@@ -37,7 +37,7 @@ export class UploadFileService {
 
       return response;
     } catch (error) {
-      console.log("error processing record for account", error)
+      console.log("error account create", error)
       throw new Error(error);
     }
   }
@@ -56,6 +56,7 @@ export class UploadFileService {
       .build();
     this.messageQueue.send("send-account", record).subscribe({
       error: (error) => {
+        this.uploadFileRepository.updateFailedEmailStatus(fileId);
         console.log("error processing record for account", error)
       }
     });
