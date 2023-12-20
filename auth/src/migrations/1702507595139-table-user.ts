@@ -1,30 +1,28 @@
-import { MigrationInterface, QueryRunner, TableColumn } from "typeorm";
+// src/migrations/CreateUserTable.ts
 
-export class AddTimestampsToUser1702507595139 implements MigrationInterface {
+import { MigrationInterface, QueryRunner, Table } from "typeorm";
+
+export class CreateUserTable1627383278852 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.addColumn(
-            'user', 
-            new TableColumn({
-                name: 'createdAt',
-                type: 'timestamp',
-                default: 'CURRENT_TIMESTAMP',
-            })
-        );
+        const tableExists = await queryRunner.hasTable("user");
 
-        await queryRunner.addColumn(
-            'user', 
-            new TableColumn({
-                name: 'updatedAt',
-                type: 'timestamp',
-                default: 'CURRENT_TIMESTAMP',
-            })
-        );
+        if (!tableExists) {
+            await queryRunner.createTable(new Table({
+                name: "user",
+                columns: [
+                    { name: "id", type: "int", isPrimary: true, isGenerated: true, generationStrategy: "increment" },
+                    { name: "email", type: "varchar" },
+                    { name: "password", type: "varchar" },
+                    { name: "createdAt", type: "timestamp", default: "now()" },
+                    { name: "updatedAt", type: "timestamp", default: "now()" }
+                ]
+            }), true);
+
+        }
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.dropColumn('user', 'createdAt');
-        await queryRunner.dropColumn('user', 'updatedAt');
+        await queryRunner.dropTable("user");
     }
-
 }
