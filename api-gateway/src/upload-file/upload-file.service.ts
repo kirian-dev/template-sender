@@ -1,4 +1,3 @@
-import { StatusFile } from './types';
 import { BadGatewayException, Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateFileDto } from './dto/create-upload-file.dto';
 import { parseCSV, validateCsvFormat } from './helpers';
